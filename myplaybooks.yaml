@@ -1,1 +1,59 @@
 
+---
+# Configure channels here
+- name: Register git version that is installed on system
+  shell: git --version | sed 's/git\ version\ //g'
+  register: git_version_output
+  tags: register
+
+- name: Set git_installed_version fact
+  set_fact: git_installed_version="{{ git_version_output.stdout }}"
+  tags: fact
+
+- debug: msg="{{ git_installed_version}}"
+- debug: msg="{{ git_version}}"
+
+- name: Dump git_installed_version to file
+  debug: msg="success"
+  when: git_installed_version ==  git_version
+  tags: dump
+
+
+- shell: cat "hello"
+  register: cat_content
+
+- set_fact: my_deploy_dir="{{ item }}"
+  when: " item ==  'Hello'"
+  with_items:
+  - "{{ cat_content.stdout_lines }}"
+
+- debug: var=my_deploy_dir
+
+
+- set_fact: "mid_build_stamp={{ my_deploy_dir | regex_replace('^(Hel)(.*)$','\\2') }}"
+
+- debug: "msg={{ mid_build_stamp }}"
+
+
+- name: Get list of files
+  shell: ls -1a
+  register: list_files
+  tags: register
+
+
+- debug: "msg={{ list_files }}"
+
+- set_fact: host_s="{{ item }}"
+  when: '"hosts.ini" in item'
+  with_items:
+  - "{{ list_files.stdout_lines }}"
+
+- debug: var=host_s
+- name: append
+  lineinfile:
+    dest: /tmp/foo
+    line: "{{ host_s }}"
+    regexp: THIS_SHOULD_NOT_EXISIS
+    state: present
+    create: yes
+  delegate_to: localhost
