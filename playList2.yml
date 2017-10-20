@@ -1,0 +1,37 @@
+---
+# Configure channels here
+- stat: path=/opt/nds/abr_encryptor/etc/config.xml
+  register: st
+- template: src=config.xml dest=/opt/nds/abr_encryptor/etc/config.xml
+  when: not st.stat.exists
+
+- name: insert/update configuration using a local file
+  blockinfile:
+    content: "{{ lookup('template', './channelDefinition.xml') }}"
+    dest: "/opt/nds/abr_encryptor/etc/config.xml"
+    marker: "<!-- {mark} Channel Definition({{ channelId }}) -->"
+    insertbefore: </services>
+
+- name: insert/update configuration using a local file
+  blockinfile:
+    content: "{{ lookup('template', './channelStartOver.xml') }}"
+    dest: "/opt/nds/abr_encryptor/etc/config.xml"
+    marker: "<!-- {mark} Channel Start over {{ channelId }} -->"
+    insertbefore: </services>
+
+- name: Check if webroot exists
+  stat:
+    path: "{{ channelCatchupTemplate }}"
+  register: channelCatchup
+
+
+- name: insert/update configuration using a local file
+  blockinfile:
+    content: "{{ lookup('template', channelCatchupTemplate) }}"
+    dest: "/opt/nds/abr_encryptor/etc/config.xml"
+    marker: "<!-- {mark} Channel catch up {{ channelId }} -->"
+    insertbefore: </services>
+  when: channelCatchup.stat.exists == true
+
+##- name: restart the abr encryptor
+##  shell: /usr/local/bin/nds_service nds_abr_encryptor restart
